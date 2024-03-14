@@ -9,11 +9,11 @@ type RenameToIn<T> = {
     : K]: T[K];
 };
 
+type MAXIMUM_ALLOWED_BOUNDARY = 80;
 /**
  * This is a utility type used below for the "if" operation.
  * Original: https://stackoverflow.com/a/68373774/765987
  */
-type MAXIMUM_ALLOWED_BOUNDARY = 80;
 type Mapped<
   Tuple extends unknown[],
   Result extends unknown[] = [],

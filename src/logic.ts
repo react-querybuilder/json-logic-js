@@ -1,4 +1,7 @@
-import type { ReservedOperations, JsonLogic } from "../logic";
+import type {
+  ProbablyBasicReservedOperations,
+  ProbablyReservedOperations,
+} from "./types";
 
 /**
  * Returns a new array that contains no duplicates.
@@ -14,34 +17,20 @@ const arrayUnique = (array: any[]) => {
   return a;
 };
 
-const jsonLogic: Record<string, (...args: any[]) => any> = {};
-
-type BasicOperations =
-  | Exclude<
-      ReservedOperations,
-      | "if"
-      | "or"
-      | "and"
-      | "map"
-      | "filter"
-      | "reduce"
-      | "all"
-      | "none"
-      | "some"
-    >
-  | (string & {});
-
-const operations: Record<BasicOperations, (...args: any[]) => any> = {
+const operations: Record<
+  ProbablyBasicReservedOperations,
+  (...args: any[]) => any
+> = {
   "==": (a, b) => a == b,
   "===": (a, b) => a === b,
   "!=": (a, b) => a != b,
   "!==": (a, b) => a !== b,
   ">": (a, b) => a > b,
   ">=": (a, b) => a >= b,
-  "<": (a, b, c) => (typeof c === 'undefined' ? a < b : a < b && b < c),
-  "<=": (a, b, c) => (typeof c === 'undefined' ? a <= b : a <= b && b <= c),
-  "!!": (a) => jsonLogic.truthy(a),
-  "!": (a) => !jsonLogic.truthy(a),
+  "<": (a, b, c) => (typeof c === "undefined" ? a < b : a < b && b < c),
+  "<=": (a, b, c) => (typeof c === "undefined" ? a <= b : a <= b && b <= c),
+  "!!": (a) => truthy(a),
+  "!": (a) => !truthy(a),
   "%": (a, b) => a % b,
   log: (a) => {
     console.log(a);
@@ -94,7 +83,7 @@ const operations: Record<BasicOperations, (...args: any[]) => any> = {
     const keys = Array.isArray(args[0]) ? args[0] : args;
 
     for (const key of keys) {
-      const value = jsonLogic.apply({ var: key }, data);
+      const value = apply({ var: key }, data);
       if ((value ?? "") === "") {
         missing.push(key);
       }
@@ -106,22 +95,28 @@ const operations: Record<BasicOperations, (...args: any[]) => any> = {
     // `missing_some` takes two arguments: 1) how many (minimum) items
     // must be present, and 2) an array of keys (just like `missing`)
     // to check for presence.
-    const are_missing = jsonLogic.apply({ missing: options }, data);
+    const are_missing = apply({ missing: options }, data);
 
     if (options.length - are_missing.length >= need_count) {
       return [];
     }
-    
+
     return are_missing;
   },
 };
-// satisfies Record<string, (...args: any[]) => any>;
 
-jsonLogic.is_logic = (logic): logic is JsonLogic =>
-  typeof logic === "object" && // An object
-  logic !== null && // but not null
-  !Array.isArray(logic) && // and not an array
-  Object.keys(logic).length === 1; // with exactly one key
+const is_logic = (
+  logic: any
+): logic is Record<ProbablyReservedOperations, any> =>
+  // It's an object...
+  typeof logic === "object" &&
+  // and not `null`...
+  logic !== null &&
+  // and not an array...
+  !Array.isArray(logic) &&
+  // with exactly one key.
+  // Note: There is no way to enforce this last condition in TypeScript.
+  Object.keys(logic).length === 1;
 
 /**
  * This helper will defer to the JsonLogic spec as a tie-breaker when different
@@ -132,99 +127,93 @@ jsonLogic.is_logic = (logic): logic is JsonLogic =>
  *
  * Spec and rationale here: http://jsonlogic.com/truthy
  */
-jsonLogic.truthy = (value) => {
-  if (Array.isArray(value) && value.length === 0) {
-    return false;
-  }
-  return !!value;
-};
+const truthy = (value: any) =>
+  Array.isArray(value) && value.length === 0 ? false : !!value;
 
-jsonLogic.get_operator = (logic) => Object.keys(logic)[0];
+const get_operator = (logic: Record<string, any>) => Object.keys(logic)[0];
 
-jsonLogic.get_values = (logic) => logic[jsonLogic.get_operator(logic)];
+const get_values = (logic: Record<string, any>) => logic[get_operator(logic)];
 
-jsonLogic.apply = (logic, data) => {
+const apply = (logic: Record<string, any>, data: any): any => {
   // Does this array contain logic? Only one way to find out.
   if (Array.isArray(logic)) {
-    return logic.map((l) => jsonLogic.apply(l, data));
+    return logic.map((l) => apply(l, data));
   }
   // You've recursed to a primitive, stop!
-  if (!jsonLogic.is_logic(logic)) {
+  if (!is_logic(logic)) {
     return logic;
   }
 
-  const op = jsonLogic.get_operator(logic);
-  const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
-  let i;
-  let current;
-
+  const op = get_operator(logic);
+  const valsTemp = logic[op];
+  const values = Array.isArray(valsTemp) ? valsTemp : [valsTemp];
 
   // 'if', 'and', and 'or' violate the normal rule of depth-first calculating consequents, let each manage recursion as needed.
   if (op === "if" || op == "?:") {
-    /* 'if' should be called with a odd number of parameters, 3 or greater
-      This works on the pattern:
-      if( 0 ){ 1 }else{ 2 };
-      if( 0 ){ 1 }else if( 2 ){ 3 }else{ 4 };
-      if( 0 ){ 1 }else if( 2 ){ 3 }else if( 4 ){ 5 }else{ 6 };
-
-      The implementation is:
-      For pairs of values (0,1 then 2,3 then 4,5 etc)
-      If the first evaluates truthy, evaluate and return the second
-      If the first evaluates falsy, jump to the next pair (e.g, 0,1 to 2,3)
-      given one parameter, evaluate and return it. (it's an Else and all the If/ElseIf were false)
-      given 0 parameters, return NULL (not great practice, but there was no Else)
-      */
+    // 'if' should be called with an odd number of parameters, no less than 3
+    // This works on the pattern:
+    // if ( 0 ) { 1 } else { 2 };
+    // if ( 0 ) { 1 } else if ( 2 ) { 3 } else { 4 };
+    // if ( 0 ) { 1 } else if ( 2 ) { 3 } else if ( 4 ) { 5 } else { 6 };
+    // ...etc.
+    // The implementation is:
+    // For pairs of values ((0,1) then (2,3) then (4,5) etc)...
+    // 1. If the first evaluates truthy, evaluate and return the second.
+    // 2. If the first evaluates falsy, jump to the next pair (e.g, (0,1) to (2,3)).
+    // 3. If only one parameter remains, evaluate and return it (it's an "else" and all the "if"/"else-if"s were false)
+    // 4. If no parameters remain, return `null` (not great practice, but there was no "else" to evaluate).
+    let i;
     for (i = 0; i < values.length - 1; i += 2) {
-      if (jsonLogic.truthy(jsonLogic.apply(values[i], data))) {
-        return jsonLogic.apply(values[i + 1], data);
+      if (truthy(apply(values[i], data))) {
+        return apply(values[i + 1], data);
       }
     }
     if (values.length === i + 1) {
-      return jsonLogic.apply(values[i], data);
+      return apply(values[i], data);
     }
     return null;
   } else if (op === "and") {
     // Return first falsy, or last
-    for (i = 0; i < values.length; i += 1) {
-      current = jsonLogic.apply(values[i], data);
-      if (!jsonLogic.truthy(current)) {
+    let current;
+    for (const val of values) {
+      current = apply(val, data);
+      if (!truthy(current)) {
         return current;
       }
     }
     return current; // Last
   } else if (op === "or") {
     // Return first truthy, or last
-    for (i = 0; i < values.length; i += 1) {
-      current = jsonLogic.apply(values[i], data);
-      if (jsonLogic.truthy(current)) {
+    let current;
+    for (const val of values) {
+      current = apply(val, data);
+      if (truthy(current)) {
         return current;
       }
     }
     return current; // Last
   } else if (op === "filter") {
-    const scopedData = jsonLogic.apply(values[0], data);
+    const scopedData = apply(values[0], data);
     const scopedLogic = values[1];
 
     if (!Array.isArray(scopedData)) {
       return [];
     }
-    // Return only the elements from the array in the first argument,
+    // Return only the elements from the array in the first argument
     // that return truthy when passed to the logic in the second argument.
-    // For parity with JavaScript, reindex the returned array
-    return scopedData.filter((datum) =>
-      jsonLogic.truthy(jsonLogic.apply(scopedLogic, datum))
-    );
+    // For parity with JavaScript, re-index the returned array.
+    return scopedData.filter((datum) => truthy(apply(scopedLogic, datum)));
   } else if (op === "map") {
-    const scopedData = jsonLogic.apply(values[0], data);
+    const scopedData = apply(values[0], data);
     const scopedLogic = values[1];
 
     if (!Array.isArray(scopedData)) {
       return [];
     }
 
-    return scopedData.map((datum) => jsonLogic.apply(scopedLogic, datum));
+    return scopedData.map((datum) => apply(scopedLogic, datum));
   } else if (op === "reduce") {
-    const scopedData = jsonLogic.apply(values[0], data);
+    const scopedData = apply(values[0], data);
     const scopedLogic = values[1];
     const initial = typeof values[2] !== "undefined" ? values[2] : null;
 
@@ -233,71 +222,64 @@ jsonLogic.apply = (logic, data) => {
     }
 
     return scopedData.reduce(
-      (accumulator, current) =>
-        jsonLogic.apply(scopedLogic, {
-          current: current,
-          accumulator: accumulator,
-        }),
+      (accumulator, current) => apply(scopedLogic, { current, accumulator }),
       initial
     );
   } else if (op === "all") {
-    const scopedData = jsonLogic.apply(values[0], data);
+    const scopedData = apply(values[0], data);
     const scopedLogic = values[1];
-    // All of an empty set is false. Note, some and none have correct fallback after the for loop
-    if (!Array.isArray(scopedData) || !scopedData.length) {
+    // All of an empty set is false. Note: `some` and `none` have correct fallback after the for loop
+    if (!Array.isArray(scopedData) || scopedData.length === 0) {
       return false;
     }
-    for (i = 0; i < scopedData.length; i += 1) {
-      if (!jsonLogic.truthy(jsonLogic.apply(scopedLogic, scopedData[i]))) {
+    for (const sd of scopedData) {
+      if (!truthy(apply(scopedLogic, sd))) {
         return false; // First falsy, short circuit
       }
     }
     return true; // All were truthy
   } else if (op === "none") {
-    const scopedData = jsonLogic.apply(values[0], data);
+    const scopedData = apply(values[0], data);
     const scopedLogic = values[1];
 
     if (!Array.isArray(scopedData) || !scopedData.length) {
       return true;
     }
-    for (i = 0; i < scopedData.length; i += 1) {
-      if (jsonLogic.truthy(jsonLogic.apply(scopedLogic, scopedData[i]))) {
+    for (const sd of scopedData) {
+      if (truthy(apply(scopedLogic, sd))) {
         return false; // First truthy, short circuit
       }
     }
     return true; // None were truthy
   } else if (op === "some") {
-    const scopedData = jsonLogic.apply(values[0], data);
+    const scopedData = apply(values[0], data);
     const scopedLogic = values[1];
 
-    if (!Array.isArray(scopedData) || !scopedData.length) {
+    if (!Array.isArray(scopedData) || scopedData.length === 0) {
       return false;
     }
-    for (i = 0; i < scopedData.length; i += 1) {
-      if (jsonLogic.truthy(jsonLogic.apply(scopedLogic, scopedData[i]))) {
+    for (const sd of scopedData) {
+      if (truthy(apply(scopedLogic, sd))) {
         return true; // First truthy, short circuit
       }
     }
     return false; // None were truthy
   } else if (op === "var") {
-    return operations.var(
-      data,
-      ...values.map((val: any) => jsonLogic.apply(val, data))
-    );
+    return operations.var(data, ...values.map((val: any) => apply(val, data)));
   } else if (op === "missing") {
     return operations.missing(
       data,
-      ...values.map((val: any) => jsonLogic.apply(val, data))
+      ...values.map((val: any) => apply(val, data))
     );
   } else if (op === "missing_some") {
     return operations.missing_some(
       data,
-      ...values.map((val: any) => jsonLogic.apply(val, data))
+      ...values.map((val: any) => apply(val, data))
     );
   }
 
   // Everyone else gets immediate depth-first recursion
-  const valuesApplied = values.map((val: any) => jsonLogic.apply(val, data));
+  const valuesApplied = values.map((val: any) => apply(val, data));
 
   // Structured commands like % or > can name formal arguments while flexible commands (like missing or merge) can operate on the pseudo-array arguments
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/arguments
@@ -307,7 +289,7 @@ jsonLogic.apply = (logic, data) => {
     // Contains a dot, and not in the 0th position
     const sub_ops = `${op}`.split(".");
     let operation: any = operations;
-    for (i = 0; i < sub_ops.length; i++) {
+    for (let i = 0; i < sub_ops.length; i++) {
       if (!operation.hasOwnProperty(sub_ops[i])) {
         throw new Error(
           "Unrecognized operation " +
@@ -327,43 +309,45 @@ jsonLogic.apply = (logic, data) => {
   throw new Error("Unrecognized operation " + op);
 };
 
-jsonLogic.uses_data = (logic) => {
+const uses_data = (logic: any) => {
   const collection: any[] = [];
 
-  if (jsonLogic.is_logic(logic)) {
-    const op = jsonLogic.get_operator(logic);
-    const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
+  if (is_logic(logic)) {
+    const op = get_operator(logic);
+    const valsTemp = logic[op];
+    const values = Array.isArray(valsTemp) ? valsTemp : [valsTemp];
 
     if (op === "var") {
       // TODO: Cover the case where the arg to `var` is itself a rule.
       collection.push(values[0]);
     } else {
       // Recursion!
-      values.forEach((val: any) => {
-        collection.push.apply(collection, jsonLogic.uses_data(val));
-      });
+      for (const val of values) {
+        collection.push(...uses_data(val));
+      }
     }
   }
 
   return arrayUnique(collection);
 };
 
-jsonLogic.add_operation = (name: string, code: (...args: any[]) => any) => {
+const add_operation = (name: string, code: (...args: any[]) => any) => {
   operations[name] = code;
 };
 
-jsonLogic.rm_operation = (name: string) => {
+const rm_operation = (name: string) => {
   delete operations[name];
 };
 
-jsonLogic.rule_like = (rule, pattern) => {
-  // console.log("Is ". JSON.stringify(rule) . " like " . JSON.stringify(pattern) . "?");
+const rule_like = (rule: any, pattern: any): boolean => {
   if (pattern === rule) {
     return true;
-  } // TODO : Deep object equivalency?
+  }
+  // TODO: Deep object equivalency?
   if (pattern === "@") {
     return true;
-  } // Wildcard!
+  }
+  // Wildcard!
   if (pattern === "number") {
     return typeof rule === "number";
   }
@@ -371,24 +355,22 @@ jsonLogic.rule_like = (rule, pattern) => {
     return typeof rule === "string";
   }
   if (pattern === "array") {
-    // !logic test might be superfluous in JavaScript
-    return Array.isArray(rule) && !jsonLogic.is_logic(rule);
+    // `!is_logic` test might be superfluous in JavaScript
+    return Array.isArray(rule) && !is_logic(rule);
   }
 
-  if (jsonLogic.is_logic(pattern)) {
-    if (jsonLogic.is_logic(rule)) {
-      const pattern_op = jsonLogic.get_operator(pattern);
-      const rule_op = jsonLogic.get_operator(rule);
+  if (is_logic(pattern)) {
+    if (is_logic(rule)) {
+      const pattern_op = get_operator(pattern);
+      const rule_op = get_operator(rule);
 
       if (pattern_op === "@" || pattern_op === rule_op) {
-        // echo "\nOperators match, go deeper\n";
-        return jsonLogic.rule_like(
-          jsonLogic.get_values(rule, false),
-          jsonLogic.get_values(pattern, false)
-        );
+        return rule_like(get_values(rule), get_values(pattern));
       }
     }
-    return false; // pattern is logic, rule isn't, can't be eq
+    // `pattern` is logic but `rule` isn't,
+    // so they can't be equalivalent
+    return false;
   }
 
   if (Array.isArray(pattern)) {
@@ -401,7 +383,7 @@ jsonLogic.rule_like = (rule, pattern) => {
       // is commutative, but '-' or 'if' or 'var' are NOT).
       for (let i = 0; i < pattern.length; i += 1) {
         // If any fail, we fail
-        if (!jsonLogic.rule_like(rule[i], pattern[i])) {
+        if (!rule_like(rule[i], pattern[i])) {
           return false;
         }
       }
@@ -413,6 +395,18 @@ jsonLogic.rule_like = (rule, pattern) => {
 
   // Not logic, not array, not a === match for rule.
   return false;
+};
+
+const jsonLogic: Record<string, (...args: any[]) => any> = {
+  is_logic,
+  truthy,
+  get_operator,
+  get_values,
+  apply,
+  uses_data,
+  add_operation,
+  rm_operation,
+  rule_like,
 };
 
 export default jsonLogic;
