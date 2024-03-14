@@ -411,6 +411,8 @@ export default [
     { integers: [1, 2, 3] },
     [1, 3],
   ],
+  // Invalid filter
+  [{ filter: [{ var: "integers" }, true] }, { integers: 123 }, []],
 
   [
     { map: [{ var: "integers" }, { "*": [{ var: "" }, 2] }] },

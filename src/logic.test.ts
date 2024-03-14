@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from "bun:test";
-import jsonLogic from "../src/logic";
+import jsonLogic from "./logic.js";
 import appliesTests from "./appliesTests.js";
 import rule_likeTests from "./rule_likeTests.js";
 
@@ -32,11 +32,17 @@ describe("rule_like()", () => {
   }
 });
 
+describe("uses_data()", () => {
+  test(`works`, () => {
+    expect(jsonLogic.uses_data({ a: [1, {var: "b"}] })).toEqual(['b']);
+  });
+});
+
 test("Bad operator", () => {
   expect(() => jsonLogic.apply({ fubar: [] })).toThrow(
     /Unrecognized operation/
   );
-  expect(() => jsonLogic.apply({ 'fubar.rabuf': [] })).toThrow(
+  expect(() => jsonLogic.apply({ "fubar.rabuf": [] })).toThrow(
     /Unrecognized operation/
   );
 });

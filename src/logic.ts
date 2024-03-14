@@ -19,7 +19,7 @@ const arrayUnique = (array: any[]) => {
 
 const operations: Record<
   ProbablyBasicReservedOperations,
-  (...args: any[]) => any
+  ((...args: any[]) => any) | Record<string, (...args: any[]) => any>
 > = {
   "==": (a, b) => a == b,
   "===": (a, b) => a === b,
@@ -265,14 +265,20 @@ const apply = (logic: Record<string, any>, data: any): any => {
     }
     return false; // None were truthy
   } else if (op === "var") {
-    return operations.var(data, ...values.map((val: any) => apply(val, data)));
+    // TODO: Remove `as any`
+    return (operations.var as any)(
+      data,
+      ...values.map((val: any) => apply(val, data))
+    );
   } else if (op === "missing") {
-    return operations.missing(
+    // TODO: Remove `as any`
+    return (operations.missing as any)(
       data,
       ...values.map((val: any) => apply(val, data))
     );
   } else if (op === "missing_some") {
-    return operations.missing_some(
+    // TODO: Remove `as any`
+    return (operations.missing_some as any)(
       data,
       ...values.map((val: any) => apply(val, data))
     );
@@ -284,7 +290,8 @@ const apply = (logic: Record<string, any>, data: any): any => {
   // Structured commands like % or > can name formal arguments while flexible commands (like missing or merge) can operate on the pseudo-array arguments
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/arguments
   if (operations.hasOwnProperty(op) && typeof operations[op] === "function") {
-    return operations[op](...valuesApplied);
+    // TODO: Remove `as any`
+    return (operations[op] as any)(...valuesApplied);
   } else if (op.indexOf(".") > 0) {
     // Contains a dot, and not in the 0th position
     const sub_ops = `${op}`.split(".");
@@ -331,7 +338,10 @@ const uses_data = (logic: any) => {
   return arrayUnique(collection);
 };
 
-const add_operation = (name: string, code: (...args: any[]) => any) => {
+const add_operation = (
+  name: string,
+  code: ((...args: any[]) => any) | Record<string, (...args: any[]) => any>
+) => {
   operations[name] = code;
 };
 

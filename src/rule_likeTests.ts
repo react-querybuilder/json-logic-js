@@ -46,6 +46,11 @@ export default [
   [["falafel"], ["string"], true],
   [[1, "falafel", []], ["number", "string", "array"], true],
 
+  // Mismatched rule/pattern
+  [{ "*": [0.01, { var: "goods" }] }, { if: ["number", "@"] }, false],
+  [["some", "array"], ["some array"], false],
+  ["not an array", ["an array"], false],
+
   // Taxes, rules of different specificity
   [{ "*": [0.01, { var: "goods" }] }, { "*": ["number", "@"] }, true],
   [{ "*": [0.01, { var: "goods" }] }, { "*": ["number", { "@": "@" }] }, true],
