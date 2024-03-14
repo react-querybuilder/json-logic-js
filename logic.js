@@ -114,11 +114,11 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     "/": function (a, b) {
       return a / b;
     },
-    min: function () {
-      return Math.min.apply(this, arguments);
+    min: function (...args) {
+      return Math.min(...args);
     },
-    max: function () {
-      return Math.max.apply(this, arguments);
+    max: function (...args) {
+      return Math.max(...args);
     },
     merge: function () {
       return Array.prototype.reduce.call(
@@ -129,9 +129,8 @@ http://ricostacruz.com/cheatsheets/umdjs.html
         []
       );
     },
-    var: function (a, b) {
+    var: function (data, a, b) {
       var not_found = b === undefined ? null : b;
-      var data = this;
       if (typeof a === "undefined" || a === "" || a === null) {
         return data;
       }
@@ -148,7 +147,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       }
       return data;
     },
-    missing: function () {
+    missing: function (data, ...args) {
       /*
       Missing can receive many keys as many arguments, like {"missing:[1,2]}
       Missing can also receive *one* argument that is an array of keys,
@@ -157,11 +156,11 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       */
 
       var missing = [];
-      var keys = Array.isArray(arguments[0]) ? arguments[0] : arguments;
+      var keys = Array.isArray(args[0]) ? args[0] : args;
 
       for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
-        var value = jsonLogic.apply({ var: key }, this);
+        var value = jsonLogic.apply({ var: key }, data);
         if (value === null || value === "") {
           missing.push(key);
         }
@@ -169,9 +168,9 @@ http://ricostacruz.com/cheatsheets/umdjs.html
 
       return missing;
     },
-    missing_some: function (need_count, options) {
+    missing_some: function (data, need_count, options) {
       // missing_some takes two arguments, how many (minimum) items must be present, and an array of keys (just like 'missing') to check for presence.
-      var are_missing = jsonLogic.apply({ missing: options }, this);
+      var are_missing = jsonLogic.apply({ missing: options }, data);
 
       if (options.length - are_missing.length >= need_count) {
         return [];
@@ -355,6 +354,15 @@ http://ricostacruz.com/cheatsheets/umdjs.html
         }
       }
       return false; // None were truthy
+    } else if (op === "var") {
+      return operations.var(
+        data,
+        ...values.map((val) => jsonLogic.apply(val, data))
+      );
+    } else if (op === "missing") {
+      return operations.missing(data, ...values.map((val) => jsonLogic.apply(val, data)));
+    } else if (op === "missing_some") {
+      return operations.missing_some(data, ...values.map((val) => jsonLogic.apply(val, data)));
     }
 
     // Everyone else gets immediate depth-first recursion
@@ -366,7 +374,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     // Structured commands like % or > can name formal arguments while flexible commands (like missing or merge) can operate on the pseudo-array arguments
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/arguments
     if (operations.hasOwnProperty(op) && typeof operations[op] === "function") {
-      return operations[op].apply(data, values);
+      return operations[op](...values);
     } else if (op.indexOf(".") > 0) {
       // Contains a dot, and not in the 0th position
       var sub_ops = String(op).split(".");
