@@ -7,12 +7,12 @@
     "test": "tests"
   },
   "devDependencies": {
-    "eslint": "^7.32.0",
-    "eslint-config-google": "^0.14.0",
-    "qunit": "^2.16.0"
+    "qunit": "^2.16.0",
+    "@types/bun": "latest"
   },
   "scripts": {
-    "test": "qunit ./tests/tests.js"
+    "test-qunit": "qunit ./tests/tests.js",
+    "test": "bun test"
   },
   "repository": {
     "type": "git",
@@ -29,5 +29,8 @@
   "bugs": {
     "url": "https://github.com/jwadhams/json-logic-js/issues"
   },
-  "homepage": "https://github.com/jwadhams/json-logic-js#readme"
+  "homepage": "https://github.com/jwadhams/json-logic-js#readme",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
 }
