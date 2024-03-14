@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
-import jsonLogic from "../logic.js";
+import { describe, expect, spyOn, test } from "bun:test";
+import jsonLogic from "../src/logic";
 import appliesTests from "./appliesTests.js";
 import rule_likeTests from "./rule_likeTests.js";
 
@@ -9,16 +9,12 @@ describe("apply()", () => {
     test(`jsonLogic.apply(${t
       .map((m) => JSON.stringify(m))
       .join(", ")}) === ${JSON.stringify(expected)}`, function () {
-      // TODO: Maybe?
-      // if (
-      //   (typeof data === "number" && typeof expected === "number") ||
-      //   (typeof data === "string" && typeof expected === "string") ||
-      //   (typeof data === "boolean" && typeof expected === "boolean")
-      // ) {
-      //   expect(jsonLogic.apply(rule, data)).toBe(expected);
-      // }
-      if (data === 1 && expected === 1 && Object.keys(rule)[0] === "var") {
-        console.log(rule, data, expected);
+      if (
+        (typeof data === "number" && typeof expected === "number") ||
+        (typeof data === "string" && typeof expected === "string") ||
+        (typeof data === "boolean" && typeof expected === "boolean")
+      ) {
+        expect(jsonLogic.apply(rule, data)).toBe(expected);
       }
       expect(jsonLogic.apply(rule, data)).toEqual(expected);
     });
@@ -40,11 +36,13 @@ test("Bad operator", () => {
   expect(() => jsonLogic.apply({ fubar: [] })).toThrow(
     /Unrecognized operation/
   );
+  expect(() => jsonLogic.apply({ 'fubar.rabuf': [] })).toThrow(
+    /Unrecognized operation/
+  );
 });
 
 describe("edge cases", () => {
   test("Called with no arguments", () => {
-    // @ts-expect-error apply() requires at least one argument
     expect(jsonLogic.apply()).toBeUndefined();
   });
   test("var when data is falsy", () => {
@@ -63,14 +61,15 @@ describe("edge cases", () => {
   });
 });
 
-//   QUnit.test("logging", function (assert) {
-//     var last_console;
-//     console.log = function (logged) {
-//       last_console = logged;
-//     };
-//     assert.equal(jsonLogic.apply({ log: [1] }), 1);
-//     assert.equal(last_console, 1);
-//   });
+test("logging", () => {
+  let last_console: any;
+  const cnsllg = spyOn(console, "log");
+  cnsllg.mockImplementation((logged) => {
+    last_console = logged;
+  });
+  expect(jsonLogic.apply({ log: [1] })).toBe(1);
+  expect(last_console).toBe(1);
+});
 
 test("Expanding functionality with add_operator", () => {
   // Operator is not yet defined
@@ -131,15 +130,15 @@ test("Control structures don't eval depth-first", () => {
   // After one truthy condition, no other condition should run
   let conditions: any[] = [];
   let consequents: any[] = [];
-  jsonLogic.add_operation("push.if", (v) => {
+  jsonLogic.add_operation("push.if", (v: any) => {
     conditions.push(v);
     return v;
   });
-  jsonLogic.add_operation("push.then", (v) => {
+  jsonLogic.add_operation("push.then", (v: any) => {
     consequents.push(v);
     return v;
   });
-  jsonLogic.add_operation("push.else", (v) => {
+  jsonLogic.add_operation("push.else", (v: any) => {
     consequents.push(v);
     return v;
   });
@@ -184,7 +183,7 @@ test("Control structures don't eval depth-first", () => {
   expect(conditions).toEqual([false, false]);
   expect(consequents).toEqual(["third"]);
 
-  jsonLogic.add_operation("push", function (arg) {
+  jsonLogic.add_operation("push", function (arg: any) {
     i.push(arg);
     return arg;
   });
