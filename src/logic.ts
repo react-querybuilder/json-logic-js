@@ -407,7 +407,7 @@ const rule_like = (rule: any, pattern: any): boolean => {
   return false;
 };
 
-const jsonLogic: Record<string, (...args: any[]) => any> = {
+export const jsonLogic: Record<string, (...args: any[]) => any> = {
   is_logic,
   truthy,
   get_operator,
@@ -418,5 +418,3 @@ const jsonLogic: Record<string, (...args: any[]) => any> = {
   rm_operation,
   rule_like,
 };
-
-export default jsonLogic;

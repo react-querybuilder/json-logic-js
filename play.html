@@ -1,116 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="shortcut icon" type="image/png" href="http://jsonlogic.com/images/favicon.png?v=1445437254" />
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="shortcut icon"
+      type="image/png"
+      href="http://jsonlogic.com/images/favicon.png?v=1445437254"
+    />
+    <title>JsonLogic Browser Test</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css"
+      integrity="sha256-PI8n5gCcz9cQqQXm3PEtDuPG8qx9oFsFctPg0S5zb8g="
+      crossorigin="anonymous"
+    />
+    <style>
+      :root {
+        --jl-blue: #337ab7;
+        --jl-blue-dim: #22699e;
+      }
+      .btn-primary {
+        --bs-btn-bg: var(--jl-blue);
+        --bs-btn-border-color: var(--jl-blue);
+        --bs-btn-hover-bg: var(--jl-blue-dim);
+        --bs-btn-hover-border-color: var(--jl-blue-dim);
+      }
+      header {
+        background-color: var(--jl-blue);
+        color: white;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      .flex {
+        display: flex;
+        justify-content: space-between;
+      }
+      #rule,
+      #data,
+      pre {
+        height: 300px;
+        margin: 0 0 1rem;
+        border: 1px solid #dcdcdc;
+        border-radius: 0.25rem;
+      }
+      pre {
+        padding: 0.5rem;
+        background-color: #f1f1f1;
+      }
+      textarea {
+        font-family: 'Courier New', Courier, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container flex">
+        <h2>JsonLogic Browser Test</h2>
+        <img
+          src="http://jsonlogic.com/images/jsonlogic-white.png"
+          style="height: 50px"
+        />
+      </div>
+    </header>
 
-	<title>Test JsonLogic in the Browser</title>
-	<!-- Latest compiled and minified CSS -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="rule"><h6>Rule</h6></label>
+            <textarea required class="form-control" id="rule">{}</textarea>
+            <div class="alert" id="message-rule" style="display: none"></div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="rule"><h6>Data</h6></label>
+            <textarea class="form-control" id="data"></textarea>
+            <div class="alert" id="message-data" style="display: none"></div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="rule"><h6>Output</h6></label>
+            <pre id="output"><code></code></pre>
+            <div class="btn btn-primary" id="compute">Compute</div>
+            <div
+              class="alert alert-danger"
+              id="message-compute"
+              style="display: none"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import $ from "https://cdn.jsdelivr.net/npm/jquery@3/+esm";
+      import jsonLogic from "./dist/json-logic.js";
 
-	<!-- Optional theme -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
-	<style>
-		#rule, #data, #output{
-			height:300px;
-			margin:0 0 10px;
-		}
-	</style>
-</head>
-<body>
-	<div style="background-color:#337ab7;color:white;">
-		<div class="container">
-			<img src="http://jsonlogic.com/images/jsonlogic-white.png" style="height:70px;float:right;"/>
-			<h1>Test JsonLogic in your Browser</h1>
-		</div>
-	</div>
+      /**
+       * Lints the text in the element with the given id.
+       * @param {string} elementId
+       * @returns {boolean}
+       */
+      const lint = (elementId) => {
+        const $element = $(elementId);
+        const val = $element.val();
+        const $message = $("#message-" + $element.attr("id"));
 
+        if (val === "") {
+          if ($element.attr("required")) {
+            $message
+              .removeClass("alert-success")
+              .addClass("alert-danger")
+              .text("Can't be blank")
+              .fadeIn();
+            return false;
+          } else {
+            $message
+              .removeClass("alert-danger")
+              .addClass("alert-success")
+              .text("OK (null)")
+              .fadeIn();
+            return true;
+          }
+        }
 
-	<div class="container">
-		<div class="row">
-			<div class="col-sm-4">
-				<div class="form-group">
-					<label for="rule">Rule:</label>
-					<textarea required class="form-control" id="rule"></textarea>
-					<div class="btn btn-default" id="lint-rule">Lint</div>
-					<div class="alert" id="message-rule" style="display:none;"></div>
-				</div>
-			</div>
-			<div class="col-sm-4">
-				<div class="form-group">
-					<label for="rule">Data:</label>
-					<textarea class="form-control" id="data"></textarea>
-					<div class="btn btn-default" id="lint-data">Lint</div>
-					<div class="alert" id="message-data" style="display:none;"></div>
-				</div>
-			</div>
-			<div class="col-sm-4">
-				<div class="form-group">
-					<label for="rule">Output:</label>
-					<pre id="output"></pre>
-					<div class="btn btn-primary" id="compute">Compute</div>
-					<div class="alert alert-danger" id="message-compute" style="display:none;"></div>
-				</div>
-			</div>
-		</div>
-	</div>
+        try {
+          JSON.parse(val);
+          $message
+            .removeClass("alert-danger")
+            .addClass("alert-success")
+            .text("OK")
+            .fadeIn();
+          return true;
+        } catch (e) {
+          $message
+            .removeClass("alert-success")
+            .addClass("alert-danger")
+            .text(e.message)
+            .fadeIn();
+          return false;
+        }
+      };
 
-	<!-- Latest compiled and minified JavaScript -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-	<script src="logic.js"></script>
-	<script>
-		function lint(element){
-			var $element = $(element),
-				text = $element.val(),
-				output,
-				$message = $("#message-" + $element.attr("id") );
+      /** Applies the rule if both the rule and data are valid. */
+      const compute = () => {
+        if (lint("#rule") && lint("#data")) {
+          const rule = JSON.parse($("#rule").val());
+          const data =
+            $("#data").val() === "" ? null : JSON.parse($("#data").val());
+          try {
+            const output = jsonLogic.apply(rule, data);
+            console.log(output);
+            $("#message-compute").fadeOut();
+            $("#output>code").text(JSON.stringify(output, null, 2));
+          } catch (e) {
+            $("#output>code").text("");
+            $("#message-compute").text(e.message).fadeIn();
+          }
+        }
+        // else: They make their own noise.
+      };
 
-			if(text === ""){
-				if($element.attr("required")){
-					$message.removeClass("alert-success").addClass("alert-danger")
-						.text("Can't be blank").fadeIn();
-					return false;
-				}else{
-					$message.removeClass("alert-danger").addClass("alert-success").text("OK (null)").fadeIn();
-					return true;
-				}
-			}
+      /** Lints the text in the rule textarea after a neglightible delay. */
+      const lintRule = () => setTimeout(() => lint("#rule"));
+      /** Lints the text in the data textarea after a neglightible delay. */
+      const lintData = () => setTimeout(() => lint("#data"));
 
-			try{
-				output = JSON.parse(text);
-				$message.removeClass("alert-danger").addClass("alert-success").text("OK").fadeIn();
-				return true;
-			}catch(e){
-				$message.removeClass("alert-success").addClass("alert-danger").text(e.message).fadeIn();
-				return false;	
-			}
+      // Add event listeners
+      $("#rule").keyup(lintRule);
+      $("#data").keyup(lintData);
+      $("#compute").click(compute);
 
-		}
-
-		$("#compute").click(function(){
-			if(lint("#rule") && lint("#data")){
-				var rule = JSON.parse($("#rule").val()),
-					data = $("#data").val() === "" ? null : JSON.parse($("#data").val()),
-					output;
-				try{
-					output = jsonLogic.apply(rule, data);
-					console.log(output);
-					$("#message-compute").fadeOut();
-					$("#output").text( JSON.stringify(output, null, 4) );
-				}catch(e){
-					$("#output").text("");
-					$("#message-compute").text(e.message).fadeIn();
-				}
-			}
-			//else: They make their own noise.
-		});
-
-		$("#lint-rule").click(function(){ lint("#rule"); });
-		$("#lint-data").click(function(){ lint("#data"); });
-
-	</script>
-</body>
+      // On page load
+      $(lintRule);
+      $(lintData);
+    </script>
+  </body>
 </html>

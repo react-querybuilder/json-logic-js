@@ -1,22 +1,35 @@
 {
-  "name": "json-logic-js",
+  "name": "@jakeboone02/json-logic-js",
   "version": "2.0.2",
   "description": "Build complex rules, serialize them as JSON, and execute them in JavaScript",
-  "main": "logic.js",
-  "directories": {
-    "test": "tests"
+  "main": "./dist/json-logic.cjs",
+  "types": "./dist/json-logic.d.cjs",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/json-logic.d.ts",
+        "default": "./dist/json-logic.js"
+      },
+      "require": {
+        "types": "./dist/json-logic.d.cts",
+        "default": "./dist/json-logic.cjs"
+      }
+    }
   },
   "devDependencies": {
-    "qunit": "^2.16.0",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "serve-static-bun": "^0.5.3",
+    "tsup": "^8.0.2"
   },
   "scripts": {
-    "test-qunit": "qunit ./tests/tests.js",
+    "dev": "bun run build && bun server.ts",
+    "build": "tsup",
     "test": "bun test"
   },
+  "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jwadhams/json-logic-js.git"
+    "url": "https://github.com/jakeboone02/json-logic-js.git"
   },
   "keywords": [
     "json",
@@ -25,12 +38,20 @@
     "rules"
   ],
   "author": "Jeremy Wadhams <jwadhams@dealerinspire.com> (http://jsonlogic.com)",
+  "contributors": [
+    "Jake Boone <jakeboone02@gmail.com> (https://github.com/jakeboone02)"
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jwadhams/json-logic-js/issues"
+    "url": "https://github.com/jakeboone02/json-logic-js/issues"
   },
-  "homepage": "https://github.com/jwadhams/json-logic-js#readme",
+  "homepage": "https://github.com/jakeboone02/json-logic-js#readme",
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   }
 }
