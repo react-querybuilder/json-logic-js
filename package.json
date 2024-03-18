@@ -18,13 +18,15 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "prettier": "3.2.5",
     "serve-static-bun": "^0.5.3",
     "tsup": "^8.0.2"
   },
   "scripts": {
     "dev": "bun run build && bun server.ts",
     "build": "tsup",
-    "test": "bun test"
+    "test": "bun test",
+    "pretty-print": "bunx prettier --write *.{ts,json} src/*.*"
   },
   "type": "module",
   "repository": {
