@@ -1,22 +1,38 @@
 {
-  "name": "json-logic-js",
-  "version": "2.0.2",
+  "name": "@react-querybuilder/json-logic-js",
+  "version": "0.1.0",
   "description": "Build complex rules, serialize them as JSON, and execute them in JavaScript",
-  "main": "logic.js",
-  "directories": {
-    "test": "tests"
+  "main": "./dist/json-logic.cjs",
+  "types": "./dist/json-logic.d.cjs",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/json-logic.d.ts",
+        "default": "./dist/json-logic.js"
+      },
+      "require": {
+        "types": "./dist/json-logic.d.cts",
+        "default": "./dist/json-logic.cjs"
+      }
+    }
   },
   "devDependencies": {
-    "eslint": "^7.32.0",
-    "eslint-config-google": "^0.14.0",
-    "qunit": "^2.16.0"
+    "@types/bun": "latest",
+    "prettier": "3.2.5",
+    "serve-static-bun": "^0.5.3",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.2"
   },
   "scripts": {
-    "test": "qunit ./tests/tests.js"
+    "dev": "bun run build && bun server.ts",
+    "build": "tsup",
+    "test": "bun test",
+    "pretty-print": "bunx prettier --write *.{ts,json} src/*.*"
   },
+  "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jwadhams/json-logic-js.git"
+    "url": "https://github.com/react-querybuilder/json-logic-js.git"
   },
   "keywords": [
     "json",
@@ -25,9 +41,12 @@
     "rules"
   ],
   "author": "Jeremy Wadhams <jwadhams@dealerinspire.com> (http://jsonlogic.com)",
+  "contributors": [
+    "Jake Boone (https://github.com/jakeboone02)"
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jwadhams/json-logic-js/issues"
+    "url": "https://github.com/react-querybuilder/json-logic-js/issues"
   },
-  "homepage": "https://github.com/jwadhams/json-logic-js#readme"
+  "homepage": "https://github.com/react-querybuilder/json-logic-js#readme"
 }
