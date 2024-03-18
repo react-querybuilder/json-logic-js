@@ -1,6 +1,6 @@
-# @jakeboone02/json-logic-js
+# @react-querybuilder/json-logic-js
 
-> _This is a fork of [json-logic-js](https://github.com/jwadhams/json-logic-js)._
+> _This fork of [json-logic-js](https://github.com/jwadhams/json-logic-js), originally by [Jeremy Wadhams](https://github.com/jwadhams), is used by [`React Query Builder`](https://react-querybuilder.js.org/) but has no dependencies itself._
 
 This parser accepts [JsonLogic](http://jsonlogic.com) rules and executes them in JavaScript.
 
@@ -13,7 +13,7 @@ The same format can also be executed in PHP by the library [json-logic-php](http
 Package manager:
 
 ```bash
-npm install @jakeboone02/json-logic-js
+npm install @react-querybuilder/json-logic-js
 # OR yarn add / pnpm add / bun add
 ```
 
@@ -22,12 +22,12 @@ CDN:
 ```html
 <!-- ESM: -->
 <script type="module">
-  import jsonLogic from "https://cdn.jsdelivr.net/npm/@jakeboone02/json-logic-js+esm";
+  import jsonLogic from "https://cdn.jsdelivr.net/npm/@react-querybuilder/json-logic-js+esm";
   // ...
 </script>
 
 <!-- UMD: -->
-<script src="https://cdn.jsdelivr.net/npm/@jakeboone02/json-logic-js/dist/json-logic.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@react-querybuilder/json-logic-js/dist/json-logic.umd.min.js"></script>
 ```
 
 ## Examples

@@ -1,6 +1,6 @@
 {
-  "name": "@jakeboone02/json-logic-js",
-  "version": "2.0.2",
+  "name": "@react-querybuilder/json-logic-js",
+  "version": "0.1.0",
   "description": "Build complex rules, serialize them as JSON, and execute them in JavaScript",
   "main": "./dist/json-logic.cjs",
   "types": "./dist/json-logic.d.cjs",
@@ -32,7 +32,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jakeboone02/json-logic-js.git"
+    "url": "https://github.com/react-querybuilder/json-logic-js.git"
   },
   "keywords": [
     "json",
@@ -42,19 +42,11 @@
   ],
   "author": "Jeremy Wadhams <jwadhams@dealerinspire.com> (http://jsonlogic.com)",
   "contributors": [
-    "Jake Boone <jakeboone02@gmail.com> (https://github.com/jakeboone02)"
+    "Jake Boone (https://github.com/jakeboone02)"
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jakeboone02/json-logic-js/issues"
+    "url": "https://github.com/react-querybuilder/json-logic-js/issues"
   },
-  "homepage": "https://github.com/jakeboone02/json-logic-js#readme",
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
-  }
+  "homepage": "https://github.com/react-querybuilder/json-logic-js#readme"
 }
